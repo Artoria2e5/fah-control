@@ -75,8 +75,8 @@ os.environ['PATH'] = path + os.pathsep + os.environ['PATH']
 
 
 # Load QT
-app = QApplication(sys.argv)
 
+app = QApplication(sys.argv)
 ui_file_name = "fah/Main.ui"
 ui_file = QFile(ui_file_name)
 if not ui_file.open(QIODevice.ReadOnly):
@@ -89,11 +89,7 @@ if not window:
     print(loader.errorString())
     sys.exit(-1)
 window.show()
+fah = FAHControl(window)
+#fah.run()
 
-# Event Handlers
-window.findChild(QAction, "actionExit").triggered.connect(QApplication.exit)
-window.findChild(QAction, "actionAbout").triggered.connect(FAHControl.on_about)
-window.findChild(QPushButton, "button_Fold").clicked.connect(FAHControl.on_fold_button_clicked)
-window.findChild(QPushButton, "button_Pause").clicked.connect(FAHControl.on_pause_button_clicked)
-window.findChild(QPushButton, "button_Finish").clicked.connect(FAHControl.on_finish_button_clicked)
 sys.exit(app.exec_())

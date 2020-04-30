@@ -36,14 +36,9 @@ import urllib.request
 import urllib.parse
 import urllib.error
 
-from gi.repository import Gtk
-from gi.repository import GLib
-from gi.repository import Gdk
-from gi.repository.GdkPixbuf import Pixbuf, InterpType
-import gi
-gi.require_version("Gtk", "3.0")
 from PySide2.QtCore import QFile, QIODevice
 from PySide2.QtUiTools import QUiLoader
+from PySide2.QtWidgets import QApplication, QAction, QPushButton
 
 # OSX integration
 if sys.platform == 'darwin':
@@ -156,7 +151,7 @@ class FAHControl(SingleAppServer):
 
     instance = None
 
-    def __init__(self, glade='FAHControl.glade'):
+    def __init__(self,window):
 
         SingleAppServer.__init__(self)
 
@@ -178,7 +173,7 @@ class FAHControl(SingleAppServer):
         self.last_clock = None
         self.timer_id = None
         self.folding_power_changing = False
-        self.window = Gtk.Window()
+        self.window = window
 
         # Open database
         try:
@@ -196,6 +191,7 @@ class FAHControl(SingleAppServer):
             self.is_old_gtk = Gtk.gtk_version < (2, 24)
             osx_add_GtkApplicationDelegate_methods()
 
+        """
         # Style
         settings = Gtk.Settings.get_default()
         self.system_theme = settings.get_property('gtk-theme-name')
@@ -219,8 +215,15 @@ class FAHControl(SingleAppServer):
                     os.path.abspath(__file__)) + '/../images/FAHControl.ico')
             except:
                 pass
-
+        """
+        # Event Handlers
+        self.window.findChild(QAction, "actionExit").triggered.connect(QApplication.exit)
+        self.window.findChild(QAction, "actionAbout").triggered.connect(FAHControl.on_about)
+        self.window.findChild(QPushButton, "button_Fold").clicked.connect(FAHControl.on_fold_button_clicked)
+        self.window.findChild(QPushButton, "button_Pause").clicked.connect(FAHControl.on_pause_button_clicked)
+        self.window.findChild(QPushButton, "button_Finish").clicked.connect(FAHControl.on_finish_button_clicked)
         # Filter glade
+        """
         if len(glade) < 1024:
             glade = open(glade, 'r', encoding="utf8").read()
         glade = re.subn('class="GtkLabel" id="wlabel',
@@ -240,8 +243,6 @@ class FAHControl(SingleAppServer):
             sys.exit(1)
 
         # Main window
-        self.window = builder.get_object('window')
-        set_tree_view_font(self.window, self.mono_font)
         self.status_bar = builder.get_object('status_bar')
         self.ppd_label = builder.get_object('ppd_label')
         self.time_label = builder.get_object('time_label')
@@ -517,7 +518,7 @@ class FAHControl(SingleAppServer):
         self.deactivate_client()
 
         self.window.connect('notify::is-active', self.on_window_is_active)
-
+        """
     # Main loop
 
     def run(self):
