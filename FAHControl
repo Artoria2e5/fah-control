@@ -23,6 +23,9 @@ import inspect
 import socket
 from optparse import OptionParser
 from fah import FAHControl, load_fahcontrol_db
+from PySide2.QtUiTools import QUiLoader
+from PySide2.QtWidgets import QApplication, QAction, QPushButton
+from PySide2.QtCore import QFile, QIODevice
 from fah.util import *
 from fah.db import *
 
@@ -32,20 +35,21 @@ def set_proc_name(name):
 
     libc = cdll.LoadLibrary('libc.so.6')
     buff = create_string_buffer(len(name)+1)
-    buff.value = bytes(name,encoding="UTF8")
+    buff.value = bytes(name, encoding="UTF8")
     libc.prctl(15, byref(buff), 0, 0, 0)
 
 
-if sys.platform.startswith('linux'): set_proc_name('FAHControl')
+if sys.platform.startswith('linux'):
+    set_proc_name('FAHControl')
 
 # If present, remove the Launch Services -psn_xxx_xxx argument
 if len(sys.argv) > 1 and sys.argv[1][:4] == '-psn':
     del sys.argv[1]
 
-parser = OptionParser(usage = 'Usage: %prog [options]')
+parser = OptionParser(usage='Usage: %prog [options]')
 
-parser.add_option('--exit', help = 'Tell the running application to exit',
-                  action = 'store_true', dest = 'exit')
+parser.add_option('--exit', help='Tell the running application to exit',
+                  action='store_true', dest='exit')
 options, args = parser.parse_args()
 
 # Tell app to exit
@@ -54,29 +58,42 @@ if options.exit:
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.connect(single_app_addr)
         sock.send('EXIT')
-        if sock.recv(1024).strip() == 'OK': print ('Ok')
+        if sock.recv(1024).strip() == 'OK':
+            print('Ok')
     except Exception as e:
         pass
 
     sys.exit(0)
 
 # Add executable path to PATH
-if getattr(sys, 'frozen', False): path = os.path.dirname(sys.executable)
-else: path = os.path.dirname(__file__)
+if getattr(sys, 'frozen', False):
+    path = os.path.dirname(sys.executable)
+else:
+    path = os.path.dirname(__file__)
 path = os.path.realpath(path)
 os.environ['PATH'] = path + os.pathsep + os.environ['PATH']
 
-# Load Glade
-dir = os.path.dirname(inspect.getfile(inspect.currentframe()))
-if not dir: dir = '.'
-glade = dir + '/fah/FAHControl.glade'
 
-if os.path.exists(glade): app = FAHControl(glade)
-else:
-    from fah.FAHControl_glade import glade_data
-    app = FAHControl(glade_data)
+# Load QT
+app = QApplication(sys.argv)
 
-try:
-    app.run()
-except Exception as e:
-    print (e)
+ui_file_name = "fah/Main.ui"
+ui_file = QFile(ui_file_name)
+if not ui_file.open(QIODevice.ReadOnly):
+    print("Cannot open {}: {}".format(ui_file_name, ui_file.errorString()))
+    sys.exit(-1)
+loader = QUiLoader()
+window = loader.load(ui_file)
+ui_file.close()
+if not window:
+    print(loader.errorString())
+    sys.exit(-1)
+window.show()
+
+# Event Handlers
+window.findChild(QAction, "actionExit").triggered.connect(QApplication.exit)
+window.findChild(QAction, "actionAbout").triggered.connect(FAHControl.on_about)
+window.findChild(QPushButton, "button_Fold").clicked.connect(FAHControl.on_fold_button_clicked)
+window.findChild(QPushButton, "button_Pause").clicked.connect(FAHControl.on_pause_button_clicked)
+window.findChild(QPushButton, "button_Finish").clicked.connect(FAHControl.on_finish_button_clicked)
+sys.exit(app.exec_())

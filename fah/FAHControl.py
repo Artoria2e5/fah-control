@@ -42,6 +42,8 @@ from gi.repository import Gdk
 from gi.repository.GdkPixbuf import Pixbuf, InterpType
 import gi
 gi.require_version("Gtk", "3.0")
+from PySide2.QtCore import QFile, QIODevice
+from PySide2.QtUiTools import QUiLoader
 
 # OSX integration
 if sys.platform == 'darwin':
@@ -155,6 +157,7 @@ class FAHControl(SingleAppServer):
     instance = None
 
     def __init__(self, glade='FAHControl.glade'):
+
         SingleAppServer.__init__(self)
 
         self.__class__.instance = self
@@ -1408,22 +1411,22 @@ class FAHControl(SingleAppServer):
             self.error('Failed to launch viewer with command:\n\n' +
                        ' '.join(cmd))
 
-    def on_about(self, widget, data=None):
-        # OSX crashes with out this, but it's a good idea anyway
-        if not self.window_visible:
-            self.restore()
-
-        if self.get_visible_dialogs():
-            return False
-
-        self.open_dialog(self.about_dialog)
-
-    def on_about_close(self, widget, data=None):
-        self.about_dialog.hide()
-        return True  # Cancel event
+    def on_about(self):
+        ui_file_name = "fah/About.ui"
+        ui_file = QFile(ui_file_name)
+        if not ui_file.open(QIODevice.ReadOnly):
+            print("Cannot open {}: {}".format(ui_file_name, ui_file.errorString()))
+            sys.exit(-1)
+        loader = QUiLoader()
+        window = loader.load(ui_file)
+        ui_file.close()
+        if not window:
+            print(loader.errorString())
+            sys.exit(-1)
+        window.show()
+        window.exec_()
 
     # Window signals
-
     def on_window_destroy(self, widget, data=None):
         if sys.platform == 'darwin':
             self.hide_all_windows()
@@ -1623,13 +1626,13 @@ class FAHControl(SingleAppServer):
 
     # Folding power signals
 
-    def on_fold_button_clicked(self, widget, data=None):
+    def on_fold_button_clicked(self):
         self.active_client.unpause()
 
-    def on_pause_button_clicked(self, widget, data=None):
+    def on_pause_button_clicked(self):
         self.active_client.pause()
 
-    def on_finish_button_clicked(self, widget, data=None):
+    def on_finish_button_clicked(self):
         self.active_client.finish()
 
     def on_folding_power_change_value(self, widget, scroll, value, data=None):
